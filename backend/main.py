@@ -1,5 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routes import router
+from database import create_tables
+
+# Create tables on startup
+create_tables()
 
 app = FastAPI(
     title="Behavioural Portfolio Optimizer API",
@@ -14,6 +19,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include all routes
+app.include_router(router)
 
 @app.get("/")
 def root():

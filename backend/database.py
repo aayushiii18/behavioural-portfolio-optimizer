@@ -19,12 +19,13 @@ class UserProfile(Base):
     user_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, unique=True, nullable=False)
     name = Column(String)
+    password = Column(String, nullable=False)  # ADD THIS LINE
     risk_tolerance = Column(Float, default=0.5)
     loss_aversion_coefficient = Column(Float, default=2.25)
     overconfidence_score = Column(Float, default=0.5)
     experience_years = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    
 class Portfolio(Base):
     __tablename__ = "portfolios"
     portfolio_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
