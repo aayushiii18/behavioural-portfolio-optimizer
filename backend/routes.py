@@ -8,6 +8,8 @@ from data.processors.transaction_analyzer import TransactionAnalyzer
 from core.behavioural.bias_detection import BiasDetector
 from core.behavioural.sentiment_analyzer import SentimentAnalyzer
 from core.ml.bias_predictor import MLBiasPredictor
+from core.optimization.portfolio_optimizer import PortfolioOptimizer
+import numpy as np
 
 router = APIRouter()
 
@@ -255,3 +257,60 @@ def get_bias_score(user_id: str):
             for bias, data in bias_report["biases"].items()
         }
     }
+# ==================
+# PORTFOLIO OPTIMIZATION ROUTES
+# ==================
+
+@router.get("/portfolio/optimize")
+def optimize_portfolio(
+    symbols: str = "AAPL,GOOGL,MSFT,AMZN,JPM",
+    user_bias: str = "rational",
+    method: str = "max_sharpe"
+):
+    """
+    Optimize portfolio with bias adjustments
+    symbols: comma separated stock symbols
+    user_bias: overconfident/loss_averse/fomo/rational
+    method: max_sharpe/min_volatility
+    """
+    optimizer = PortfolioOptimizer()
+    symbol_list = [s.strip().upper() for s in symbols.split(",")]
+    
+    result = optimizer.optimize_portfolio(
+        symbols=symbol_list,
+        user_bias=user_bias,
+        optimization_method=method
+    )
+    return result
+
+@router.get("/portfolio/monte-carlo")
+def run_monte_carlo(
+    symbols: str = "AAPL,GOOGL,MSFT",
+    user_bias: str = "rational"
+):
+    """Run Monte Carlo simulation"""
+    optimizer = PortfolioOptimizer()
+    symbol_list = [s.strip().upper() for s in symbols.split(",")]
+    
+    prices = optimizer.get_stock_data(symbol_list)
+    returns = optimizer.calculate_returns(prices)
+    
+    n_assets = len(symbol_list)
+    equal_weights = np.array([1/n_assets] * n_assets)
+    
+    monte_carlo = optimizer.run_monte_carlo(equal_weights, returns)
+    return monte_carlo
+
+@router.get("/portfolio/frontier")
+def get_efficient_frontier(
+    symbols: str = "AAPL,GOOGL,MSFT,AMZN"
+):
+    """Get efficient frontier data"""
+    optimizer = PortfolioOptimizer()
+    symbol_list = [s.strip().upper() for s in symbols.split(",")]
+    
+    prices = optimizer.get_stock_data(symbol_list)
+    returns = optimizer.calculate_returns(prices)
+    
+    frontier = optimizer.generate_efficient_frontier(returns, 50)
+    return {"frontier": frontier}
