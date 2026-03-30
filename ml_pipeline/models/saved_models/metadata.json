@@ -1,0 +1,19 @@
+{
+  "trained_at": "2026-03-30T14:42:50.992771",
+  "feature_columns": [
+    "trades_per_month",
+    "avg_quantity",
+    "avg_value",
+    "buy_sell_ratio",
+    "bull_ratio",
+    "bear_ratio",
+    "volatile_ratio",
+    "avg_holding_days",
+    "max_trade_value",
+    "total_trades",
+    "unique_stocks",
+    "concentration_ratio"
+  ],
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 100
+}

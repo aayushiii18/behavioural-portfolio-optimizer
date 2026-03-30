@@ -5,6 +5,9 @@ from schemas import UserRegister, UserLogin, Token, UserResponse
 from auth import hash_password, verify_password, create_access_token, get_current_user
 from data.collectors.market_data import MarketDataCollector
 from data.processors.transaction_analyzer import TransactionAnalyzer
+from core.behavioural.bias_detection import BiasDetector
+from core.behavioural.sentiment_analyzer import SentimentAnalyzer
+from core.ml.bias_predictor import MLBiasPredictor
 
 router = APIRouter()
 
@@ -114,3 +117,141 @@ def analyze_transactions(user_id: str):
     transactions = analyzer.generate_mock_transactions(user_id)
     analysis = analyzer.full_analysis(transactions)
     return analysis
+
+# ==================
+# SENTIMENT ROUTES
+# ==================
+
+@router.get("/sentiment/stock/{symbol}")
+def get_stock_sentiment(symbol: str):
+    """Get sentiment analysis for a stock"""
+    analyzer = SentimentAnalyzer()
+    result = analyzer.get_stock_sentiment(symbol.upper())
+    return result
+
+@router.get("/sentiment/market")
+def get_market_sentiment():
+    """Get overall market sentiment"""
+    analyzer = SentimentAnalyzer()
+    result = analyzer.analyze_market_sample_news()
+    return result
+
+@router.get("/sentiment/emotional/{user_id}")
+def get_emotional_trading(user_id: str):
+    """Detect emotional trading patterns"""
+    txn_analyzer = TransactionAnalyzer()
+    sentiment_analyzer = SentimentAnalyzer()
+    
+    transactions = txn_analyzer.generate_mock_transactions(user_id)
+    market_sentiment = sentiment_analyzer.analyze_market_sample_news()
+    
+    emotional_analysis = sentiment_analyzer.detect_emotional_trading(
+        transactions,
+        market_sentiment['avg_compound_score']
+    )
+    
+    return {
+        "user_id": user_id,
+        "market_sentiment": market_sentiment['overall_sentiment'],
+        "market_sentiment_score": market_sentiment['avg_compound_score'],
+        "emotional_trading": emotional_analysis
+
+    }
+# ==================
+# ML PREDICTION ROUTES
+# ==================
+
+@router.get("/ml/predict/{user_id}")
+def ml_predict_bias(user_id: str):
+    """
+    Use ML model to predict investor bias
+    More accurate than rule-based detection
+    """
+    txn_analyzer = TransactionAnalyzer()
+    ml_predictor = MLBiasPredictor()
+    
+    # Get transactions
+    transactions = txn_analyzer.generate_mock_transactions(user_id)
+    
+    # ML prediction
+    prediction = ml_predictor.predict_bias(transactions)
+    
+    return {
+        "user_id": user_id,
+        "ml_prediction": prediction
+    }
+
+@router.get("/ml/full-analysis/{user_id}")
+def ml_full_analysis(user_id: str):
+    """
+    Complete analysis combining:
+    1. ML bias prediction
+    2. Rule-based bias detection
+    3. Sentiment analysis
+    4. Personalized nudges
+    """
+    txn_analyzer = TransactionAnalyzer()
+    ml_predictor = MLBiasPredictor()
+    bias_detector = BiasDetector()
+    sentiment_analyzer = SentimentAnalyzer()
+    
+    # Get transactions
+    transactions = txn_analyzer.generate_mock_transactions(user_id)
+    
+    # Run all analyses
+    ml_prediction = ml_predictor.predict_bias(transactions)
+    rule_based = bias_detector.analyze_all_biases(transactions)
+    market_sentiment = sentiment_analyzer.analyze_market_sample_news()
+    transaction_analysis = txn_analyzer.full_analysis(transactions)
+    
+    return {
+        "user_id": user_id,
+        "ml_prediction": ml_prediction,
+        "rule_based_analysis": rule_based,
+        "market_sentiment": market_sentiment,
+        "transaction_analysis": transaction_analysis,
+        "summary": {
+            "primary_bias": ml_prediction.get("predicted_bias"),
+            "confidence": ml_prediction.get("confidence_score"),
+            "overall_bias_score": rule_based.get("overall_score"),
+            "market_sentiment": market_sentiment.get("overall_sentiment"),
+            "nudges": ml_prediction.get("nudges", [])
+        }
+    }
+# ==================
+# BIAS DETECTION ROUTES
+# ==================
+
+@router.get("/bias/analyze/{user_id}")
+def analyze_biases(user_id: str):
+    """Analyze all 8 biases for a user"""
+    analyzer = TransactionAnalyzer()
+    detector = BiasDetector()
+    
+    # Get transactions
+    transactions = analyzer.generate_mock_transactions(user_id)
+    
+    # Analyze biases
+    bias_report = detector.analyze_all_biases(transactions)
+    
+    return bias_report
+
+@router.get("/bias/score/{user_id}")
+def get_bias_score(user_id: str):
+    """Get quick bias score summary"""
+    analyzer = TransactionAnalyzer()
+    detector = BiasDetector()
+    
+    transactions = analyzer.generate_mock_transactions(user_id)
+    bias_report = detector.analyze_all_biases(transactions)
+    
+    return {
+        "user_id": user_id,
+        "overall_score": bias_report["overall_score"],
+        "overall_level": bias_report["overall_level"],
+        "dominant_bias": bias_report["dominant_bias"],
+        "bias_scores": {
+            bias: data["score"] 
+            for bias, data in bias_report["biases"].items()
+        }
+    }
