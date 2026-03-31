@@ -1,0 +1,81 @@
+name: Behavioural Portfolio CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Job 1: Run Backend Tests
+  test-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        cd backend
+        pytest tests/ -v --tb=short
+      env:
+        DATABASE_URL: sqlite:///./test.db
+        SECRET_KEY: test-secret-key
+        ALGORITHM: HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+  # Job 2: Check Frontend builds
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm install
+    
+    - name: Build frontend
+      run: |
+        cd frontend
+        npm run build
+
+  # Job 3: Code Quality Check
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install linting tools
+      run: pip install flake8
+    
+    - name: Run linter
+      run: |
+        cd backend
+        flake8 . --count --max-line-length=120 --statistics --exclude=venv,__pycache__
+      continue-on-error: true
