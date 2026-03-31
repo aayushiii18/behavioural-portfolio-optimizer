@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-03-30T14:42:50.992771",
+  "trained_at": "2026-04-01T01:06:47.825129",
   "feature_columns": [
     "trades_per_month",
     "avg_quantity",
