@@ -10,6 +10,8 @@ from core.behavioural.sentiment_analyzer import SentimentAnalyzer
 from core.ml.bias_predictor import MLBiasPredictor
 from core.optimization.portfolio_optimizer import PortfolioOptimizer
 import numpy as np
+from core.behavioural.nudge_engine import NudgeEngine
+from core.behavioural.gamification import GamificationEngine
 
 router = APIRouter()
 
@@ -314,3 +316,71 @@ def get_efficient_frontier(
     
     frontier = optimizer.generate_efficient_frontier(returns, 50)
     return {"frontier": frontier}
+# ==================
+# NUDGE ROUTES
+# ==================
+
+@router.get("/nudges/{user_id}")
+def get_nudges(user_id: str):
+    """Get personalized nudges for user"""
+    txn_analyzer = TransactionAnalyzer()
+    bias_detector = BiasDetector()
+    nudge_engine = NudgeEngine()
+    
+    transactions = txn_analyzer.generate_mock_transactions(user_id)
+    bias_analysis = bias_detector.analyze_all_biases(transactions)
+    nudges = nudge_engine.generate_all_nudges(bias_analysis)
+    
+    return {
+        "user_id": user_id,
+        "nudges": nudges
+    }
+
+@router.get("/nudges/single/{bias_type}")
+def get_single_nudge(bias_type: str, score: int = 75):
+    """Get nudge for specific bias"""
+    nudge_engine = NudgeEngine()
+    nudge = nudge_engine.generate_nudge(bias_type, score)
+    return nudge
+
+@router.get("/nudges/cooling-off/{user_id}")
+def check_cooling_off(user_id: str):
+    """Check if user should wait before trading"""
+    nudge_engine = NudgeEngine()
+    result = nudge_engine.check_cooling_off(user_id)
+    return result
+
+# ==================
+# GAMIFICATION ROUTES
+# ==================
+
+@router.get("/gamification/{user_id}")
+def get_gamification_stats(user_id: str):
+    """Get user's points, badges and level"""
+    txn_analyzer = TransactionAnalyzer()
+    bias_detector = BiasDetector()
+    game_engine = GamificationEngine()
+    
+    transactions = txn_analyzer.generate_mock_transactions(user_id)
+    bias_analysis = bias_detector.analyze_all_biases(transactions)
+    
+    stats = game_engine.calculate_user_stats(
+        user_id,
+        transactions,
+        bias_analysis
+    )
+    return stats
+
+@router.get("/gamification/challenge/daily")
+def get_daily_challenge():
+    """Get today's investment challenge"""
+    game_engine = GamificationEngine()
+    challenge = game_engine.get_daily_challenge()
+    return challenge
+
+@router.get("/gamification/leaderboard")
+def get_leaderboard():
+    """Get top investors leaderboard"""
+    game_engine = GamificationEngine()
+    leaderboard = game_engine.get_leaderboard()
+    return {"leaderboard": leaderboard}
