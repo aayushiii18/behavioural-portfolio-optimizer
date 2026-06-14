@@ -38,7 +38,3 @@ pytest tests/ -v
 - ✅ Sentiment Analysis
 - ✅ 39 Tests Passing
 
-## 🔒 Confidential
-Property of Zetheta Algorithms Private Limited.
-
-STRICTLY PRIVATE & CONFIDENTIAL
